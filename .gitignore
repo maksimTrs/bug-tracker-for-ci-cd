@@ -16,6 +16,8 @@ bugtracker-frontend/full_output.txt
 
 # Dependencies
 node_modules/
+CLAUDE.md
+docs/
 
 # Environment
 .env
