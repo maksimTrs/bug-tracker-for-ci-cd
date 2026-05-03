@@ -1,29 +1,47 @@
 services:
   jenkins-docker:
-    image: docker:dind
+    image: docker:27.3.1-dind
     container_name: jenkins-docker
-    privileged: true
+    restart: on-failure
+    privileged: true                 # DinD needs kernel namespaces unavailable to unprivileged containers
+    init: true
     environment:
       - DOCKER_TLS_CERTDIR=/certs
     volumes:
       - jenkins-docker-certs:/certs/client
-      - jenkins-data:/var/jenkins_home
-    ports:
-      - "2376:2376"
+    expose:
+      - "2376"
     networks:
       jenkins:
         aliases:
           - docker
     command: --storage-driver overlay2
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2g
 
   my-jenkins:
-    image: my-jenkins
+    build: .
+    image: my-jenkins:local
     container_name: my-jenkins
     restart: on-failure
+    init: true
+    depends_on:
+      jenkins-docker:
+        condition: service_healthy   # "started" is not enough — DinD must finish generating TLS certs first
     environment:
       - DOCKER_HOST=tcp://docker:2376
       - DOCKER_CERT_PATH=/certs/client
       - DOCKER_TLS_VERIFY=1
+      # Relaxed CSP: HTML Publisher / Allure require inline styles to render in the browser.
+      # Default Jenkins CSP blocks all inline styles — this is a known Jenkins limitation.
       - JAVA_OPTS=-Dhudson.model.DirectoryBrowserSupport.CSP="default-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
     volumes:
       - jenkins-data:/var/jenkins_home
@@ -33,6 +51,12 @@ services:
       - "50000:50000"
     networks:
       - jenkins
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+        reservations:
+          memory: 1g
 
 networks:
   jenkins:

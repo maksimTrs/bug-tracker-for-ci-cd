@@ -18,6 +18,7 @@ bugtracker-frontend/full_output.txt
 node_modules/
 CLAUDE.md
 docs/
+.claude/
 
 # Environment
 .env
