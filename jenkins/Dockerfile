@@ -1,7 +1,7 @@
 # Jenkins LTS with JDK 17, pinned for build determinism.
 # To upgrade: check https://www.jenkins.io/changelog-stable/ and update the tag.
 # For maximum reproducibility pin by digest: jenkins/jenkins@sha256:<digest>.
-FROM jenkins/jenkins:2.479.3-lts-jdk17
+FROM jenkins/jenkins:2.541.3-lts-jdk17
 
 USER root
 
