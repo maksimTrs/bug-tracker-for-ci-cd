@@ -30,6 +30,7 @@ services:
   my-jenkins:
     build: .
     image: my-jenkins:local
+    pull_policy: build
     container_name: my-jenkins
     restart: on-failure
     init: true
