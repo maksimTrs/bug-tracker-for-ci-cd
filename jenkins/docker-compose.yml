@@ -2,7 +2,7 @@ services:
   jenkins-docker:
     image: docker:27.3.1-dind
     container_name: jenkins-docker
-    restart: on-failure
+    restart: unless-stopped
     privileged: true                 # DinD needs kernel namespaces unavailable to unprivileged containers
     init: true
     environment:
@@ -32,7 +32,7 @@ services:
     image: my-jenkins:local
     pull_policy: build
     container_name: my-jenkins
-    restart: on-failure
+    restart: unless-stopped
     init: true
     depends_on:
       jenkins-docker:
