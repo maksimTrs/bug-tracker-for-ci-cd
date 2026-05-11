@@ -9,6 +9,7 @@ services:
       - DOCKER_TLS_CERTDIR=/certs
     volumes:
       - jenkins-docker-certs:/certs/client
+      - jenkins-data:/var/jenkins_home  # same path as my-jenkins — lets DinD bind-mount the workspace into agent containers
     expose:
       - "2376"
     networks:
