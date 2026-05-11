@@ -7,6 +7,7 @@ pipeline {
                 docker {
                     image 'snakee/golang-junit:1.21'
                     reuseNode true
+                    args '-u root'
                 }
             }
             steps {
