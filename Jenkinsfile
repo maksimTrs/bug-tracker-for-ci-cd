@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'linux && docker' }
+    agent any
 
     stages {
         stage('Unit Tests') {
