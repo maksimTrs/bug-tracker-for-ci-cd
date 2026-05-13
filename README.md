@@ -148,4 +148,4 @@ Jenkins will then be available at [http://localhost:9000](http://localhost:9000)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details 
+This project is licensed under the MIT License - see the LICENSE file for details
