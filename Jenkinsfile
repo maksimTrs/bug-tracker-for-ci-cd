@@ -122,7 +122,7 @@ pipeline {
                     junit testResults: 'tests-api/test-results/results.xml',
                           allowEmptyResults: false
                     publishHTML target: [
-                        allowMissing:          true,   // report not written when tests fail — prevents double failure in post
+                        allowMissing:          true,
                         alwaysLinkToLastBuild: true,
                         keepAll:               true,
                         reportDir:             'tests-api/playwright-report',
