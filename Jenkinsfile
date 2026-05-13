@@ -94,8 +94,9 @@ pipeline {
             }
             post {
                 always {
-                    // tear down the compose stack regardless of stage outcome
-                    sh 'docker compose down --volumes --remove-orphans'
+                    // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
+                    // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
+                    sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
                 }
             }
         }
