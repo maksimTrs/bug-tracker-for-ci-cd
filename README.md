@@ -1,6 +1,5 @@
 # Bug Tracker Pro
 
-
 A full-stack bug tracking application built with Go (backend) and Next.js (frontend). The application allows users to create, read, update, and delete bug reports, with support for comments and priority levels.
 
 ## Features
