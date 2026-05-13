@@ -78,4 +78,10 @@ pipeline {
             }
         }
     }
+
+    post {
+        cleanup {
+            cleanWs()
+        }
+    }
 }
