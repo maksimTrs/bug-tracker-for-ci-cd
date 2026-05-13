@@ -77,6 +77,22 @@ pipeline {
                 }
             }
         }
+
+        stage('Launch Application') {
+            agent {
+                docker {
+                    image 'docker:27.5.1'
+                    reuseNode true
+                    // mount host Docker socket (DooD) so compose controls host-level containers
+                    args '-v /var/run/docker.sock:/var/run/docker.sock -u 0'
+                }
+            }
+            steps {
+                // --wait implies detached mode and blocks until all services are healthy/running
+                // --wait-timeout prevents the stage from hanging indefinitely if a service never becomes healthy
+                sh 'docker compose up --build --wait --wait-timeout 60'
+            }
+        }
     }
 
     post {
