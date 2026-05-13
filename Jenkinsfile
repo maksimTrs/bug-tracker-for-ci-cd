@@ -15,7 +15,8 @@ pipeline {
                     steps {
                         dir('bugtracker-backend') {
                             sh '''
-                                # -set-exit-code: without this flag go-junit-report exits 0 even when tests fail — build would stay green
+                                # -set-exit-code: without this go-junit-report exits 0 even when tests fail
+                                # build would stay green
                                 go test -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 \
                                     | go-junit-report -set-exit-code > test-results.xml
 
@@ -53,6 +54,8 @@ pipeline {
                             sh '''
                                 npm ci
                                 npm test
+                                mkdir -p reports
+                                mv coverage reports/
                             '''
                         }
                     }
@@ -60,6 +63,11 @@ pipeline {
                         always {
                             junit testResults: 'bugtracker-frontend/test-results.xml',
                                   allowEmptyResults: false
+                            publishHTML target: [
+                                reportDir: 'bugtracker-frontend/reports/coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Frontend Coverage Report'
+                            ]
                         }
                     }
                 }
