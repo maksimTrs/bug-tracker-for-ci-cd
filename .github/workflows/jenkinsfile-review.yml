@@ -30,6 +30,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Read,Glob,Grep,Bash"'
           prompt: |
             Review the changes to `Jenkinsfile` in this pull request against Jenkins pipeline best practices.
 
@@ -46,8 +47,10 @@ jobs:
 
             Read the file `docs/references/jenkins-best-practices.md` for the full project-specific rules.
 
-            Post a structured review comment on the PR with:
-            - A severity-ranked list of findings (Critical / High / Medium / Low)
-            - A concrete fix suggestion for each finding
+            When done, post your findings directly as a PR comment using the gh CLI:
+              gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "YOUR_REVIEW_TEXT"
+
+            The comment must contain:
             - A one-line summary at the top: "X issues found (Y critical, Z high)"
-            - If no issues found, say so explicitly — "No issues found, Jenkinsfile follows best practices"
+            - A severity-ranked list of findings (Critical / High / Medium / Low) with a concrete fix for each
+            - If no issues found: "No issues found — Jenkinsfile follows best practices"
