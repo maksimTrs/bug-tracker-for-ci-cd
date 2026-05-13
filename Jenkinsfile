@@ -110,15 +110,34 @@ pipeline {
                     sh 'npx playwright test'
                 }
             }
+            post {
+                always {
+                    junit testResults: 'tests-api/test-results/results.xml',
+                          allowEmptyResults: false
+                    publishHTML target: [
+                        allowMissing:          true,   // report not written when tests fail — prevents double failure in post
+                        alwaysLinkToLastBuild: true,
+                        keepAll:               true,
+                        reportDir:             'tests-api/playwright-report',
+                        reportFiles:           'index.html',
+                        reportName:            'API Tests Report'
+                    ]
+                }
+            }
         }
     }
 
     post {
         always {
-            // tear down compose stack after all stages; runs before cleanup so docker-compose.yml is still in workspace
+            // run cleanup inside docker:27.5.1 — Jenkins node has no Compose V2 plugin
             // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
             // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
-            sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
+            script {
+                docker.image('docker:27.5.1')
+                      .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
+                    sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
+                }
+            }
         }
         cleanup {
             cleanWs()
