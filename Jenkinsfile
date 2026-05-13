@@ -64,9 +64,12 @@ pipeline {
                             junit testResults: 'bugtracker-frontend/test-results.xml',
                                   allowEmptyResults: false
                             publishHTML target: [
-                                reportDir: 'bugtracker-frontend/reports/coverage',
-                                reportFiles: 'index.html',
-                                reportName: 'Frontend Coverage Report'
+                                allowMissing:          true,   // coverage dir not written when tests fail — prevents double failure in post
+                                alwaysLinkToLastBuild: true,
+                                keepAll:               true,
+                                reportDir:             'bugtracker-frontend/reports/coverage',
+                                reportFiles:           'index.html',
+                                reportName:            'Frontend Coverage Report'
                             ]
                         }
                     }
