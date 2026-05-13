@@ -1,9 +1,10 @@
 pipeline {
-    agent any
+    agent { label 'linux && docker' }
 
     options {
         timeout(time: 10, unit: 'MINUTES')
         timestamps()
+        ansiColor('xterm')
         disableConcurrentBuilds(abortPrevious: true)
         buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
     }
@@ -14,6 +15,7 @@ pipeline {
                 stage('Backend') {
                     agent {
                         docker {
+                            // TODO: pin to immutable digest — run: docker inspect --format='{{index .RepoDigests 0}}' snakee/golang-junit:1.21
                             image 'snakee/golang-junit:1.21'
                             reuseNode true
                             args '-u root'
@@ -45,6 +47,9 @@ pipeline {
                                 reportFiles:           'coverage.html',
                                 reportName:            'Backend Coverage Report'
                             ]
+                            archiveArtifacts artifacts: 'bugtracker-backend/test-results.xml, bugtracker-backend/reports/**',
+                                             allowEmptyArchive: true,
+                                             onlyIfSuccessful: false
                         }
                     }
                 }
@@ -52,6 +57,7 @@ pipeline {
                 stage('Frontend') {
                     agent {
                         docker {
+                            // TODO: pin to immutable digest — run: docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine
                             image 'node:20-alpine'
                             reuseNode true  // share workspace with outer agent — no separate checkout inside container
                         }
@@ -79,6 +85,9 @@ pipeline {
                                 reportFiles:           'index.html',
                                 reportName:            'Frontend Coverage Report'
                             ]
+                            archiveArtifacts artifacts: 'bugtracker-frontend/test-results.xml, bugtracker-frontend/reports/**',
+                                             allowEmptyArchive: true,
+                                             onlyIfSuccessful: false
                         }
                     }
                 }
@@ -88,6 +97,7 @@ pipeline {
         stage('Launch Application') {
             agent {
                 docker {
+                    // TODO: pin to immutable digest — run: docker inspect --format='{{index .RepoDigests 0}}' docker:27.5.1
                     image 'docker:27.5.1'
                     reuseNode true
                     // mount host Docker socket (DooD) so compose controls host-level containers
@@ -104,6 +114,7 @@ pipeline {
         stage('API Tests') {
             agent {
                 docker {
+                    // TODO: pin to immutable digest — run: docker inspect --format='{{index .RepoDigests 0}}' node:20-alpine
                     image 'node:20-alpine'
                     reuseNode true
                     // --network=host lets the container reach compose services via localhost ports
@@ -122,10 +133,16 @@ pipeline {
                     junit testResults: 'tests-api/test-results/results.xml',
                           allowEmptyResults: false
                     publishHTML target: [
+                        allowMissing:          true,   // playwright-report not written when Playwright fails to start — prevents double failure in post
+                        alwaysLinkToLastBuild: true,
+                        keepAll:               true,
                         reportDir:             'tests-api/playwright-report',
                         reportFiles:           'index.html',
                         reportName:            'API Tests Report'
                     ]
+                    archiveArtifacts artifacts: 'tests-api/test-results/**, tests-api/playwright-report/**',
+                                     allowEmptyArchive: true,
+                                     onlyIfSuccessful: false
                 }
             }
         }
@@ -136,6 +153,7 @@ pipeline {
             // run cleanup inside docker:27.5.1 — Jenkins node has no Compose V2 plugin
             // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
             // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
+            // TODO: pin docker:27.5.1 to immutable digest here as well (same image as Launch Application stage)
             script {
                 docker.image('docker:27.5.1')
                       .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
