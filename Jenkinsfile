@@ -54,6 +54,7 @@ pipeline {
                             sh '''
                                 npm ci
                                 npm test
+                                rm -rf reports
                                 mkdir -p reports
                                 mv coverage reports/
                             '''
