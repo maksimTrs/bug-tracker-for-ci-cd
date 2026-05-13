@@ -41,3 +41,6 @@ frontend.pid
 
 # Node modules in tests directory
 /tests/node_modules/
+
+# Claude Code session files
+.claude/settings.local.json
