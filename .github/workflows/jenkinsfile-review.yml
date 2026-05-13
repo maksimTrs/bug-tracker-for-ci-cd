@@ -1,0 +1,56 @@
+name: Jenkinsfile Best Practices Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'Jenkinsfile'
+  push:
+    branches: [main, starter]
+    paths:
+      - 'Jenkinsfile'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Review Jenkinsfile changes
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Review the changes to `Jenkinsfile` in this pull request against Jenkins pipeline best practices.
+
+            Focus on:
+            1. Declarative pipeline structure — correct use of agent, stages, post blocks
+            2. Credentials handling — secrets must use withCredentials with single-quoted shell, never environment block interpolation
+            3. Timeouts and options — pipeline-level timeout, timestamps, ansiColor, buildDiscarder, disableConcurrentBuilds
+            4. Agent label specificity — never `agent any`, always a label expression
+            5. post { } block design — always/failure/success conditions, reporting in always
+            6. Parallel stages — correct syntax, no duplicate keys, fail-fast considerations
+            7. Shared library pinning — @Library must include a version tag, never float on master
+            8. stash/unstash usage — warn if large directories are stashed (target/, node_modules/)
+            9. CPS safety — flag any closures or .collect{} that may trigger NotSerializableException
+
+            Read the file `docs/references/jenkins-best-practices.md` for the full project-specific rules.
+
+            Post a structured review comment on the PR with:
+            - A severity-ranked list of findings (Critical / High / Medium / Low)
+            - A concrete fix suggestion for each finding
+            - A one-line summary at the top: "X issues found (Y critical, Z high)"
+            - If no issues found, say so explicitly — "No issues found, Jenkinsfile follows best practices"
