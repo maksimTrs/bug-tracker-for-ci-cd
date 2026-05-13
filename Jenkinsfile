@@ -92,17 +92,34 @@ pipeline {
                 // --wait-timeout prevents the stage from hanging indefinitely if a service never becomes healthy
                 sh 'docker compose up --build --wait --wait-timeout 60'
             }
-            post {
-                always {
-                    // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
-                    // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
-                    sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
+        }
+
+        stage('API Tests') {
+            agent {
+                docker {
+                    image 'node:20-alpine'
+                    reuseNode true
+                    // --network=host lets the container reach compose services via localhost ports
+                    // no browser install needed — all tests use Playwright request fixture (pure HTTP)
+                    args '--network=host'
+                }
+            }
+            steps {
+                dir('tests-api') {
+                    sh 'npm ci'
+                    sh 'npx playwright test'
                 }
             }
         }
     }
 
     post {
+        always {
+            // tear down compose stack after all stages; runs before cleanup so docker-compose.yml is still in workspace
+            // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
+            // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
+            sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
+        }
         cleanup {
             cleanWs()
         }
