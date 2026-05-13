@@ -14,13 +14,29 @@ pipeline {
                     }
                     steps {
                         dir('bugtracker-backend') {
-                            sh 'go test -v ./... 2>&1 | go-junit-report -set-exit-code > test-results.xml'
+                            sh '''
+                                # -set-exit-code: without this flag go-junit-report exits 0 even when tests fail — build would stay green
+                                go test -v -coverprofile=coverage.out -covermode=atomic ./... 2>&1 \
+                                    | go-junit-report -set-exit-code > test-results.xml
+
+                                go tool cover -html=coverage.out -o coverage.html
+                                mkdir -p reports
+                                mv coverage.html reports/
+                            '''
                         }
                     }
                     post {
                         always {
                             junit testResults: 'bugtracker-backend/test-results.xml',
                                   allowEmptyResults: false
+                            publishHTML target: [
+                                allowMissing:          true,   // coverage.html not written when tests fail — prevents double failure in post
+                                alwaysLinkToLastBuild: true,
+                                keepAll:               true,
+                                reportDir:             'bugtracker-backend/reports',
+                                reportFiles:           'coverage.html',
+                                reportName:            'Backend Coverage Report'
+                            ]
                         }
                     }
                 }
@@ -29,7 +45,7 @@ pipeline {
                     agent {
                         docker {
                             image 'node:20-alpine'
-                            reuseNode true
+                            reuseNode true  // share workspace with outer agent — no separate checkout inside container
                         }
                     }
                     steps {
