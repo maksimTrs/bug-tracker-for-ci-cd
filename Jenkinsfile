@@ -139,8 +139,20 @@ pipeline {
             script {
                 docker.image('docker:27.5.1')
                       .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
-                    sh 'docker compose down --volumes --remove-orphans --rmi local || echo "WARNING: docker compose down failed with exit code $?"'
-                    sh 'docker image prune -f'
+                    sh '''
+                        exit_code=0
+                        docker compose down --volumes --remove-orphans --rmi local || exit_code=$?
+                        if [ "$exit_code" -ne 0 ]; then
+                            echo "WARNING: docker compose down failed with exit code $exit_code"
+                        fi
+                    '''
+                    sh '''
+                        exit_code=0
+                        docker image prune -f || exit_code=$?
+                        if [ "$exit_code" -ne 0 ]; then
+                            echo "WARNING: docker image prune failed with exit code $exit_code"
+                        fi
+                    '''
                 }
             }
         }
