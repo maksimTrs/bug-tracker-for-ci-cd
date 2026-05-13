@@ -122,32 +122,12 @@ pipeline {
                     junit testResults: 'tests-api/test-results/results.xml',
                           allowEmptyResults: false
                     publishHTML target: [
-                        allowMissing:          true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll:               true,
                         reportDir:             'tests-api/playwright-report',
                         reportFiles:           'index.html',
                         reportName:            'API Tests Report'
                     ]
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            // run cleanup inside docker:27.5.1 — Jenkins node has no Compose V2 plugin
-            // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
-            // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
-            script {
-                docker.image('docker:27.5.1')
-                      .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
-                    sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
-                }
-            }
-        }
-        cleanup {
-            cleanWs()
         }
     }
 }
