@@ -92,6 +92,12 @@ pipeline {
                 // --wait-timeout prevents the stage from hanging indefinitely if a service never becomes healthy
                 sh 'docker compose up --build --wait --wait-timeout 60'
             }
+            post {
+                always {
+                    // tear down the compose stack regardless of stage outcome
+                    sh 'docker compose down --volumes --remove-orphans'
+                }
+            }
         }
     }
 
