@@ -1,6 +1,10 @@
 pipeline {
     agent none
 
+    triggers {
+        pollSCM('H/2 * * * *')  // check for new commits every ~2 minutes
+    }
+
     options {
         // abort the entire pipeline if it runs longer than 10 minutes
         timeout(time: 10, unit: 'MINUTES')
