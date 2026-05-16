@@ -7,9 +7,11 @@ pipeline {
 
     options {
         // abort the entire pipeline if it runs longer than 10 minutes
-        timeout(time: 10, unit: 'MINUTES')
+        timeout(time: 15, unit: 'MINUTES')
         // prefix every log line with the wall-clock time
         timestamps()
+        // render ANSI color codes from test runners (Playwright, k6, Go) in Jenkins logs
+        ansiColor('xterm')
         // cancel any in-progress build for this branch when a new one starts
         disableConcurrentBuilds(abortPrevious: true)
         // keep only the last 5 builds and their artifacts to save disk space
