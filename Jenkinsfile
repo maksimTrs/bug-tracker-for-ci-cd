@@ -139,6 +139,41 @@ pipeline {
                 }
             }
         }
+
+        stage('E2E Tests') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/playwright:v1.50.0-jammy'
+                    reuseNode true
+                    // -u 0: root required for Chromium sandbox and browser deps
+                    // --network=host: reaches compose services on localhost ports (same as API Tests)
+                    args '-u 0 --network=host -v $HOME/.npm:/root/.npm'
+                }
+            }
+            environment {
+                CI = 'true'  // activates headless mode in playwright.config.ts
+            }
+            steps {
+                dir('tests-e2e') {
+                    sh 'npm ci'
+                    sh 'npx playwright test'
+                }
+            }
+            post {
+                always {
+                    junit testResults: 'tests-e2e/test-results/results.xml',
+                          allowEmptyResults: false
+                    publishHTML target: [
+                        allowMissing:          true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll:               true,
+                        reportDir:             'tests-e2e/playwright-report',
+                        reportFiles:           'index.html',
+                        reportName:            'Playwright E2E Test Report'
+                    ]
+                }
+            }
+        }
     }
 
     post {
