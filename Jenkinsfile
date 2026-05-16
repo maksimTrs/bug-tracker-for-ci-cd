@@ -1,7 +1,12 @@
 pipeline {
-    agent any
+    agent none
 
     options {
+        timeout(time: 45, unit: 'MINUTES')
+        timestamps()
+        ansiColor('xterm')
+        disableConcurrentBuilds(abortPrevious: true)
+        buildDiscarder(logRotator(numToKeepStr: '20', artifactNumToKeepStr: '10'))
     }
 
     stages {
@@ -52,7 +57,7 @@ pipeline {
                             image 'node:20-alpine'
                             reuseNode true  // share workspace with outer agent — no separate checkout inside container
                             // mount host npm cache so npm ci reuses downloaded packages across builds
-                            args "-v ${env.HOME}/.npm:/root/.npm"
+                            args '-v $HOME/.npm:/root/.npm'
                         }
                     }
                     steps {
@@ -107,7 +112,7 @@ pipeline {
                     reuseNode true
                     // --network=host lets the container reach compose services via localhost ports
                     // no browser install needed — all tests use Playwright request fixture (pure HTTP)
-                    args "--network=host -v ${env.HOME}/.npm:/root/.npm"
+                    args '--network=host -v $HOME/.npm:/root/.npm'
                 }
             }
             steps {
@@ -138,12 +143,17 @@ pipeline {
             // run cleanup inside docker:27.5.1 — Jenkins node has no Compose V2 plugin
             // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
             // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
-            script {
-                docker.image('docker:27.5.1')
-                      .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
-                    sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
+            timeout(time: 5, unit: 'MINUTES') {
+                script {
+                    docker.image('docker:27.5.1')
+                          .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
+                        sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
+                    }
                 }
             }
+        }
+        cleanup {
+            cleanWs(deleteDirs: true)
         }
     }
 }
