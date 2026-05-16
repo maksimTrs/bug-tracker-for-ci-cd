@@ -2,12 +2,20 @@ pipeline {
     agent any
 
     options {
+        // abort the entire pipeline if it runs longer than 10 minutes
+        timeout(time: 10, unit: 'MINUTES')
+        // prefix every log line with the wall-clock time
+        timestamps()
+        // cancel any in-progress build for this branch when a new one starts
+        disableConcurrentBuilds(abortPrevious: true)
+        // keep only the last 5 builds and their artifacts to save disk space
+        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
     }
 
     stages {
         stage('Unit Tests') {
-             {
-                failFast false  // both shards run to completion even if one fails — get full results
+            failFast false  // both shards run to completion even if one fails — get full results
+            parallel {
                 stage('Backend') {
                     agent {
                         docker {
@@ -144,6 +152,9 @@ pipeline {
                     sh 'docker compose down --volumes --remove-orphans --rmi local && docker image prune -f'
                 }
             }
+        }
+        cleanup {
+            cleanWs()
         }
     }
 }
