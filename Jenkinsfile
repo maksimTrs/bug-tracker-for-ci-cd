@@ -6,8 +6,6 @@ pipeline {
         timeout(time: 10, unit: 'MINUTES')
         // prefix every log line with the wall-clock time
         timestamps()
-        // render ANSI color codes from test runners (go test, npm, playwright) in the log
-        ansiColor('xterm')
         // cancel any in-progress build for this branch when a new one starts
         disableConcurrentBuilds(abortPrevious: true)
         // keep only the last 5 builds and their artifacts to save disk space
@@ -16,8 +14,8 @@ pipeline {
 
     stages {
         stage('Unit Tests') {
+            failFast false  // both shards run to completion even if one fails — get full results
             parallel {
-                failFast false  // both shards run to completion even if one fails — get full results
                 stage('Backend') {
                     agent {
                         docker {
