@@ -162,7 +162,9 @@ pipeline {
             echo 'Pipeline REGRESSION — was green, now red'
         }
         cleanup {
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
     }
 }
