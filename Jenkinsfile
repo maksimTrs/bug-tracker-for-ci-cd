@@ -178,6 +178,45 @@ pipeline {
                 }
             }
         }
+
+        stage('Performance Tests') {
+            options {
+                // k6 script runs 30s + container startup overhead; 5 min fits within pipeline-level 10 min ceiling
+                timeout(time: 5, unit: 'MINUTES')
+            }
+            agent {
+                docker {
+                    image 'grafana/k6:v2.0.0'
+                    reuseNode true
+                    // --network=host: k6 needs to reach compose services on localhost ports
+                    // --entrypoint="": Jenkins agent requires a shell; k6 image sets its own entrypoint
+                    args '--network=host --entrypoint=""'
+                }
+            }
+            steps {
+                dir('tests-perf') {
+                    // catchError: k6 exits 99 when thresholds are breached — treat as UNSTABLE, not FAILED
+                    // threshold breach means SLO violated, not pipeline broken; downstream stages (cleanup) still run
+                    catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                        sh 'k6 run script.js'
+                    }
+                }
+            }
+            post {
+                always {
+                    // allowMissing: if k6 crashed before handleSummary ran, HTML won't exist — don't mask the real error
+                    // keepAll: retain one report per build for cross-run comparison
+                    publishHTML target: [
+                        allowMissing:          true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll:               true,
+                        reportDir:             'tests-perf',
+                        reportFiles:           'perf-results.html',
+                        reportName:            'Performance Test Results'
+                    ]
+                }
+            }
+        }
     }
 
     post {
