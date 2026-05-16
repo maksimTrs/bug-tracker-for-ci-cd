@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jenkinsfile Review</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #24292f;
+      background: #f6f8fa;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+
+    /* Header */
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #24292f;
+      margin-bottom: 4px;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: #57606a;
+    }
+
+    /* Summary cards */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .summary-card {
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-top: 3px solid var(--color);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .summary-card .count {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--color);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .summary-card .label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #57606a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* No issues banner */
+    .no-issues {
+      background: #dafbe1;
+      border: 1px solid #aceebb;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      color: #116329;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    /* Accordion section */
+    .section {
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 16px;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: background 0.12s;
+    }
+
+    .section-header:hover { background: #f6f8fa; }
+
+    .section.open .section-header { border-bottom-color: #d0d7de; }
+
+    .severity-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--color);
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .section-count {
+      font-size: 12px;
+      color: #57606a;
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-radius: 20px;
+      padding: 1px 10px;
+    }
+
+    .chevron {
+      color: #57606a;
+      font-size: 11px;
+      transition: transform 0.2s;
+    }
+
+    .section.open .chevron { transform: rotate(180deg); }
+
+    .section-body { display: none; }
+    .section.open .section-body { display: block; }
+
+    /* Finding */
+    .finding {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .finding:last-child { border-bottom: none; }
+
+    .finding-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .severity-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      color: #fff;
+      background: var(--color);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .finding-title {
+      font-weight: 600;
+      font-size: 13px;
+      color: #24292f;
+    }
+
+    .finding-desc {
+      color: #57606a;
+      font-size: 13px;
+      margin-bottom: 10px;
+      padding-left: 0;
+    }
+
+    .fix-box {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
+      border-left: 3px solid #0969da;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #24292f;
+    }
+
+    .fix-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #0969da;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    @media (max-width: 600px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="page-header">
+    <h1 id="title">Jenkinsfile Review</h1>
+    <div class="meta" id="meta"></div>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+const reviewData = REVIEW_DATA_PLACEHOLDER;
+
+const SEVERITIES = [
+  { key: 'critical', label: 'Critical', color: '#cf222e' },
+  { key: 'high',     label: 'High',     color: '#bc4c00' },
+  { key: 'medium',   label: 'Medium',   color: '#9a6700' },
+  { key: 'low',      label: 'Low',      color: '#57606a' },
+];
+
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'onclick') e.addEventListener('click', v);
+      else e.setAttribute(k, v);
+    }
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+
+function cssVar(element, key, value) {
+  element.style.setProperty(key, value);
+  return element;
+}
+
+// Header
+document.getElementById('title').textContent =
+  reviewData.pr ? `Jenkinsfile Review — PR #${reviewData.pr}` : 'Jenkinsfile Review';
+const ts = reviewData.generated_at ? new Date(reviewData.generated_at).toLocaleString() : '';
+document.getElementById('meta').textContent =
+  [reviewData.repo, ts].filter(Boolean).join(' · ');
+
+// Summary bar
+const summaryEl = document.getElementById('summary');
+const findings = reviewData.findings || [];
+for (const s of SEVERITIES) {
+  const count = findings.filter(f => f.severity === s.key).length;
+  const card = cssVar(el('div', { class: 'summary-card' },
+    el('div', { class: 'count' }, String(count)),
+    el('div', { class: 'label' }, s.label)
+  ), '--color', s.color);
+  summaryEl.appendChild(card);
+}
+
+// Content
+const contentEl = document.getElementById('content');
+
+if (findings.length === 0) {
+  contentEl.appendChild(
+    el('div', { class: 'no-issues' }, '✓ No issues found — Jenkinsfile follows best practices')
+  );
+} else {
+  for (const s of SEVERITIES) {
+    const items = findings.filter(f => f.severity === s.key);
+    if (items.length === 0) continue;
+
+    const section = cssVar(el('div', { class: 'section open' }), '--color', s.color);
+
+    const header = el('div', { class: 'section-header',
+      onclick: () => section.classList.toggle('open') },
+      el('div', { class: 'severity-dot' }),
+      el('span', { class: 'section-title' }, s.label),
+      el('span', { class: 'section-count' }, `${items.length} finding${items.length !== 1 ? 's' : ''}`),
+      el('span', { class: 'chevron' }, '▾')
+    );
+
+    const body = el('div', { class: 'section-body' });
+
+    for (const f of items) {
+      const badge = cssVar(el('span', { class: 'severity-badge' }, s.label), '--color', s.color);
+      body.appendChild(
+        el('div', { class: 'finding' },
+          el('div', { class: 'finding-header' },
+            badge,
+            el('span', { class: 'finding-title' }, f.title || '')
+          ),
+          el('div', { class: 'finding-desc' }, f.description || ''),
+          el('div', { class: 'fix-box' },
+            el('div', { class: 'fix-label' }, 'Fix'),
+            el('div', null, f.fix || '')
+          )
+        )
+      );
+    }
+
+    section.appendChild(header);
+    section.appendChild(body);
+    contentEl.appendChild(section);
+  }
+}
+</script>
+</body>
+</html>
