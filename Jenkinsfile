@@ -6,6 +6,7 @@ pipeline {
         timeout(time: 10, unit: 'MINUTES')
         // prefix every log line with the wall-clock time
         timestamps()
+        ansiColor('xterm')
         // cancel any in-progress build for this branch when a new one starts
         disableConcurrentBuilds(abortPrevious: true)
         // keep only the last 5 builds and their artifacts to save disk space
