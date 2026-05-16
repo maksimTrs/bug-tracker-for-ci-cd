@@ -1,12 +1,9 @@
 pipeline {
-    agent { label 'linux && docker' }
+    agent any
 
     options {
         timeout(time: 10, unit: 'MINUTES')
         timestamps()
-        ansiColor('xterm')
-        disableConcurrentBuilds(abortPrevious: true)
-        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
     }
 
     stages {
@@ -150,11 +147,6 @@ pipeline {
 
     post {
         always {
-            // run cleanup inside docker:27.5.1 — Jenkins node has no Compose V2 plugin
-            // --rmi local removes compose-built images; prune cleans dangling layers from previous builds
-            // --remove-orphans removes containers left over from a previous run whose services no longer exist in compose file
-            // TODO: pin docker:27.5.1 to immutable digest here as well (same image as Launch Application stage)
-            script {
                 docker.image('docker:27.5.1')
                       .inside('-v /var/run/docker.sock:/var/run/docker.sock -u 0') {
                     sh '''
@@ -172,7 +164,6 @@ pipeline {
                         fi
                     '''
                 }
-            }
         }
         cleanup {
             cleanWs()
