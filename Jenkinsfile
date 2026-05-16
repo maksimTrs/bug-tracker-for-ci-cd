@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     options {
-        timeout(time: 10, unit: 'MINUTES')
-        timestamps()
-        disableConcurrentBuilds(abortPrevious: true)
-        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
+        timeout(time: 10, unit: 'MINUTES')                                        // abort the entire pipeline if it runs longer than 10 minutes
+        timestamps()                                                               // prefix every log line with the wall-clock time
+        disableConcurrentBuilds(abortPrevious: true)                              // cancel any in-progress build for this branch when a new one starts
+        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5')) // keep only the last 5 builds and their artifacts to save disk space
     }
 
     stages {
