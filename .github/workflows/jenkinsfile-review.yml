@@ -30,7 +30,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--allowedTools "Read,Glob,Grep,Bash"'
+          claude_args: |
+            --allowedTools "Read,Glob,Grep,Bash,Write"
+            --model claude-sonnet-4-6
+            --effort medium
+            --max-turns 15
           prompt: |
             Review the changes to `Jenkinsfile` in this pull request against Jenkins pipeline best practices.
 
@@ -47,10 +51,41 @@ jobs:
 
             Read the file `docs/references/jenkins-best-practices.md` for the full project-specific rules.
 
-            When done, post your findings directly as a PR comment using the gh CLI:
+            Step 1 — Write an HTML report to `_site/review/index.html`.
+            The file must be a complete, self-contained HTML5 document (inline CSS only, no external dependencies) with:
+            - Header: "Jenkinsfile Review — PR #${{ github.event.pull_request.number || 'manual' }}" and generation timestamp
+            - Summary line: "X issues found (Y critical, Z high, W medium, V low)" or a green banner if no issues
+            - Findings list sorted by severity, each entry containing:
+                - Severity badge color-coded: Critical = #d73a49, High = #e36209, Medium = #b08800, Low = #6a737d
+                - Finding description
+                - Concrete fix suggestion
+            Use clean typography, max-width 860px centered layout, system font stack.
+
+            Step 2 — Post findings as a PR comment using the gh CLI (skip this step if the PR number is empty):
               gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "YOUR_REVIEW_TEXT"
 
-            The comment must contain:
-            - A one-line summary at the top: "X issues found (Y critical, Z high)"
+            The PR comment must contain:
+            - A one-line summary: "X issues found (Y critical, Z high)"
             - A severity-ranked list of findings (Critical / High / Medium / Low) with a concrete fix for each
+            - A link to the full HTML report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/review/
             - If no issues found: "No issues found — Jenkinsfile follows best practices"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
