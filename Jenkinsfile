@@ -186,7 +186,7 @@ pipeline {
             }
             agent {
                 docker {
-                    image 'grafana/k6:v2.0.0'
+                    image 'grafana/k6:2.0.0'
                     reuseNode true
                     // --network=host: k6 needs to reach compose services on localhost ports
                     // --entrypoint="": Jenkins agent requires a shell; k6 image sets its own entrypoint

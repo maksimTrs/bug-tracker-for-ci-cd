@@ -27,7 +27,8 @@ The user is a **Senior QA / SDET** with deep test-framework experience but treat
 
 ### Language
 
-- **Chat:** Russian — explanations, commentary, every prose response.
+- **Chat (local Claude Code session):** Russian — explanations, commentary, every prose response.
+- **GitHub context (PR comments, issue comments, @claude mentions):** English only — responses are public and visible to the whole team.
 - **Code, comments, committed files:** English — `Jenkinsfile`, workflow YAML, Groovy classes in `src/`/`vars/`, shell scripts, Markdown in `docs/`. Files go to remote repos — no Russian in source.
 - **Technical terms** (agent, runner, matrix, post-block, OIDC, composite action, CPS, sandbox, stash, etc.) stay in English everywhere.
 
