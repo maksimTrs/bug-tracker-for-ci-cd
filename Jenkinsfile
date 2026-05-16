@@ -124,6 +124,9 @@ pipeline {
                     args '--network=host -v $HOME/.npm:/root/.npm'
                 }
             }
+            environment {
+                FORCE_COLOR = '1'  // force Playwright list reporter to emit ANSI codes — rendered by AnsiColor plugin
+            }
             steps {
                 dir('tests-api') {
                     sh 'npm ci'
@@ -157,7 +160,8 @@ pipeline {
                 }
             }
             environment {
-                CI = 'true'  // activates headless mode in playwright.config.ts
+                CI          = 'true'  // activates headless mode in playwright.config.ts
+                FORCE_COLOR = '1'     // force Playwright list reporter to emit ANSI codes — rendered by AnsiColor plugin
             }
             steps {
                 dir('tests-e2e') {
