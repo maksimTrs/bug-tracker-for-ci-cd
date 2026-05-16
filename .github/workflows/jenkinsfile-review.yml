@@ -14,6 +14,7 @@ concurrency:
 jobs:
   review:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.actor, '[bot]') }}
     timeout-minutes: 10
     permissions:
       contents: read
@@ -51,23 +52,38 @@ jobs:
 
             Read the file `docs/references/jenkins-best-practices.md` for the full project-specific rules.
 
-            Step 1 — Write an HTML report to `_site/review/index.html`.
-            The file must be a complete, self-contained HTML5 document (inline CSS only, no external dependencies) with:
-            - Header: "Jenkinsfile Review — PR #${{ github.event.pull_request.number || 'manual' }}" and generation timestamp
-            - Summary line: "X issues found (Y critical, Z high, W medium, V low)" or a green banner if no issues
-            - Findings list sorted by severity, each entry containing:
-                - Severity badge color-coded: Critical = #d73a49, High = #e36209, Medium = #b08800, Low = #6a737d
-                - Finding description
-                - Concrete fix suggestion
-            Use clean typography, max-width 860px centered layout, system font stack.
+            Step 1 — Write your findings as a JSON object to `_site/review-data.json` using the Write tool.
+            Get the current UTC timestamp first by running: date -u +"%Y-%m-%dT%H:%M:%SZ"
+            Use this exact schema:
+            {
+              "pr": ${{ github.event.pull_request.number || 0 }},
+              "repo": "${{ github.repository }}",
+              "generated_at": "<UTC timestamp from above>",
+              "findings": [
+                {
+                  "severity": "critical|high|medium|low",
+                  "title": "Short finding title (max 80 chars)",
+                  "description": "What the problem is and where in the file",
+                  "fix": "Concrete fix instruction"
+                }
+              ]
+            }
+            If no issues found, set "findings" to an empty array [].
 
-            Step 2 — Post findings as a PR comment using the gh CLI (skip this step if the PR number is empty):
+            Step 2 — Merge template with data by running:
+            mkdir -p _site && python3 -c "
+            with open('_site/review-data.json') as f: data = f.read()
+            with open('docs/review-template.html') as t: tmpl = t.read()
+            with open('_site/index.html', 'w') as o: o.write(tmpl.replace('REVIEW_DATA_PLACEHOLDER', data))
+            "
+
+            Step 3 — Post findings as a PR comment using the gh CLI (skip this step if the PR number is empty):
               gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body "YOUR_REVIEW_TEXT"
 
             The PR comment must contain:
             - A one-line summary: "X issues found (Y critical, Z high)"
             - A severity-ranked list of findings (Critical / High / Medium / Low) with a concrete fix for each
-            - A link to the full HTML report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/review/
+            - A link to the full HTML report: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
             - If no issues found: "No issues found — Jenkinsfile follows best practices"
 
       - name: Upload Pages artifact
@@ -88,4 +104,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

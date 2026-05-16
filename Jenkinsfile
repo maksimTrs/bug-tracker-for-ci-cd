@@ -2,15 +2,22 @@ pipeline {
     agent any
 
     options {
-        timeout(time: 10, unit: 'MINUTES')                                        // abort the entire pipeline if it runs longer than 10 minutes
-        timestamps()                                                               // prefix every log line with the wall-clock time
-        disableConcurrentBuilds(abortPrevious: true)                              // cancel any in-progress build for this branch when a new one starts
-        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5')) // keep only the last 5 builds and their artifacts to save disk space
+        // abort the entire pipeline if it runs longer than 10 minutes
+        timeout(time: 10, unit: 'MINUTES')
+        // prefix every log line with the wall-clock time
+        timestamps()
+        // render ANSI color codes from test runners (go test, npm, playwright) in the log
+        ansiColor('xterm')
+        // cancel any in-progress build for this branch when a new one starts
+        disableConcurrentBuilds(abortPrevious: true)
+        // keep only the last 5 builds and their artifacts to save disk space
+        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
     }
 
     stages {
         stage('Unit Tests') {
             parallel {
+                failFast false  // both shards run to completion even if one fails — get full results
                 stage('Backend') {
                     agent {
                         docker {
@@ -54,6 +61,8 @@ pipeline {
                         docker {
                             image 'node:20-alpine'
                             reuseNode true  // share workspace with outer agent — no separate checkout inside container
+                            // mount host npm cache so npm ci reuses downloaded packages across builds
+                            args "-v ${env.HOME}/.npm:/root/.npm"
                         }
                     }
                     steps {
@@ -108,7 +117,7 @@ pipeline {
                     reuseNode true
                     // --network=host lets the container reach compose services via localhost ports
                     // no browser install needed — all tests use Playwright request fixture (pure HTTP)
-                    args '--network=host'
+                    args "--network=host -v ${env.HOME}/.npm:/root/.npm"
                 }
             }
             steps {
